@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class WithdrawalRequestedEvent {
     private String senderId;
-    private String recepientId;
+    private String recipientId;
     private BigDecimal amount;
 
 }

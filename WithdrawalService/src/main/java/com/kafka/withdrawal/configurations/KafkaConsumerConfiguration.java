@@ -1,4 +1,4 @@
-package com.kafka.deposit;
+package com.kafka.withdrawal.configurations;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,8 +47,8 @@ public class KafkaConsumerConfiguration {
 				environment.getProperty("spring.kafka.consumer.properties.spring.json.trusted.packages"));
 		
 		config.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, 
-				environment.getProperty("spring.kafka.consumer.isolation-level", "READ_COMMITTED").toLowerCase());
-
+				environment.getProperty("spring.kafka.consumer.isolation-level", "READ_COMMITED").toLowerCase());
+		
 		return new DefaultKafkaConsumerFactory<>(config);
 	}
 

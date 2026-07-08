@@ -1,30 +1,17 @@
 package com.kafka.transfers.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class TransferRestModel {
     private String senderId;
-    private String recepientId;
+    private String recipientId;
     private BigDecimal amount;
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-    public String getSenderId() {
-        return senderId;
-    }
-    public void setSenderId(String senderId) {
-        this.senderId = senderId;
-    }
-    public String getRecepientId() {
-        return recepientId;
-    }
-    public void setRecepientId(String recepientId) {
-        this.recepientId = recepientId;
-    }
-
     
 }

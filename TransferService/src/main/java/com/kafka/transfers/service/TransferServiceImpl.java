@@ -1,8 +1,8 @@
 package com.kafka.transfers.service;
 
 import com.kafka.transfers.error.TransferServiceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -17,41 +17,34 @@ import com.kafka.payments.core.events.DepositRequestedEvent;
 import com.kafka.payments.core.events.WithdrawalRequestedEvent;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class TransferServiceImpl implements TransferService {
-	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
-
 	private KafkaTemplate<String, Object> kafkaTemplate;
-	private Environment environment;
-	private RestTemplate restTemplate;
+	private final Environment environment;
+	private final RestTemplate restTemplate;
 
-	public TransferServiceImpl(KafkaTemplate<String, Object> kafkaTemplate, Environment environment,
-			RestTemplate restTemplate) {
-		this.kafkaTemplate = kafkaTemplate;
-		this.environment = environment;
-		this.restTemplate = restTemplate;
-	}
 
 	@Transactional
 	@Override
 	public boolean transfer(TransferRestModel transferRestModel) {
 		WithdrawalRequestedEvent withdrawalEvent = new WithdrawalRequestedEvent(transferRestModel.getSenderId(),
-				transferRestModel.getRecepientId(), transferRestModel.getAmount());
+				transferRestModel.getRecipientId(), transferRestModel.getAmount());
 		DepositRequestedEvent depositEvent = new DepositRequestedEvent(transferRestModel.getSenderId(),
-				transferRestModel.getRecepientId(), transferRestModel.getAmount());
+				transferRestModel.getRecipientId(), transferRestModel.getAmount());
 
 		try {
-			kafkaTemplate.send(environment.getProperty("withdraw-money-topic", "withdraw-money-topic"),
-					withdrawalEvent);
-			LOGGER.info("Sent event to withdrawal topic.");
+			kafkaTemplate.send(environment.getProperty("withdraw-money-topic", "withdraw-money-topic"), withdrawalEvent);
+			log.info("Sent event to withdrawal topic.");
 
 			// Business logic that causes and error
 			callRemoteServce();
 
 			kafkaTemplate.send(environment.getProperty("deposit-money-topic", "deposit-money-topic"), depositEvent);
-			LOGGER.info("Sent event to deposit topic");
+			log.info("Sent event to deposit topic");
 
 		} catch (Exception ex) {
-			LOGGER.error(ex.getMessage(), ex);
+			log.error(ex.getMessage(), ex);
 			throw new TransferServiceException(ex);
 		}
 
@@ -67,7 +60,7 @@ public class TransferServiceImpl implements TransferService {
 		}
 
 		if (response.getStatusCode().value() == HttpStatus.OK.value()) {
-			LOGGER.info("Received response from mock service: " + response.getBody());
+            log.info("Received response from mock service: {}", response.getBody());
 		}
 		return response;
 	}

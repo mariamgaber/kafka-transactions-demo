@@ -1,4 +1,4 @@
-package com.kafka.transfers;
+package com.kafka.transfers.configurations;
 
 import java.util.HashMap;
 import java.util.Map;

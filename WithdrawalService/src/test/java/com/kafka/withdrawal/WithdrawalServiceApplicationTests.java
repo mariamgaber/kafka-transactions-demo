@@ -9,5 +9,4 @@ class WithdrawalServiceApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
 }

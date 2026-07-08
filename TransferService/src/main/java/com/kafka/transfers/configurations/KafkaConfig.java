@@ -17,10 +17,10 @@ import org.springframework.kafka.transaction.KafkaTransactionManager;
 @Configuration
 public class KafkaConfig {
 
-	@Value("withdraw-money-topic")
+	@Value("${withdraw-money-topic}")
 	private String withdrawTopicName;
 
-	@Value("deposit-money-topic")
+	@Value("${deposit-money-topic}")
 	private String depositTopicName;
 
 	@Value("${spring.kafka.producer.bootstrap-servers}")
@@ -48,7 +48,7 @@ public class KafkaConfig {
 	private boolean idempotence;
 
 	@Value("${spring.kafka.producer.properties.max.in.flight.requests.per.connection}")
-	private int inflightRequests;
+	private int inFlightRequests;
 	
 	@Value("${spring.kafka.producer.transaction-id-prefix}")
 	private String transactionalIdPrefix;
@@ -64,7 +64,7 @@ public class KafkaConfig {
 		props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, requestTimeout);
 
 		props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, idempotence);
-		props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, inflightRequests);
+		props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, inFlightRequests);
 		
 		props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionalIdPrefix);
 

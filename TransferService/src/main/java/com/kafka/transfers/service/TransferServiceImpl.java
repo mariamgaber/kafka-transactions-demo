@@ -3,7 +3,7 @@ package com.kafka.transfers.service;
 import com.kafka.transfers.error.TransferServiceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,27 +20,26 @@ import com.kafka.payments.core.events.WithdrawalRequestedEvent;
 @Slf4j
 @RequiredArgsConstructor
 public class TransferServiceImpl implements TransferService {
-	private KafkaTemplate<String, Object> kafkaTemplate;
-	private final Environment environment;
+	private final KafkaTemplate<String, Object> kafkaTemplate;
 	private final RestTemplate restTemplate;
 
+	@Value("${withdraw-money-topic}")
+	private String withdrawTopicName;
 
+	@Value("${deposit-money-topic}")
+	private String depositTopicName;
 	@Transactional
 	@Override
 	public boolean transfer(TransferRestModel transferRestModel) {
-		WithdrawalRequestedEvent withdrawalEvent = new WithdrawalRequestedEvent(transferRestModel.getSenderId(),
-				transferRestModel.getRecipientId(), transferRestModel.getAmount());
-		DepositRequestedEvent depositEvent = new DepositRequestedEvent(transferRestModel.getSenderId(),
-				transferRestModel.getRecipientId(), transferRestModel.getAmount());
+		WithdrawalRequestedEvent withdrawalEvent = new WithdrawalRequestedEvent(transferRestModel.getSenderId(), transferRestModel.getRecipientId(), transferRestModel.getAmount());
+		DepositRequestedEvent depositEvent = new DepositRequestedEvent(transferRestModel.getSenderId(), transferRestModel.getRecipientId(), transferRestModel.getAmount());
 
 		try {
-			kafkaTemplate.send(environment.getProperty("withdraw-money-topic", "withdraw-money-topic"), withdrawalEvent);
+			kafkaTemplate.send(withdrawTopicName, withdrawalEvent);
 			log.info("Sent event to withdrawal topic.");
-
 			// Business logic that causes and error
-			callRemoteServce();
-
-			kafkaTemplate.send(environment.getProperty("deposit-money-topic", "deposit-money-topic"), depositEvent);
+			callRemoteService();
+			kafkaTemplate.send(depositTopicName, depositEvent);
 			log.info("Sent event to deposit topic");
 
 		} catch (Exception ex) {
@@ -51,18 +50,17 @@ public class TransferServiceImpl implements TransferService {
 		return true;
 	}
 
-	private ResponseEntity<String> callRemoteServce() throws Exception {
+	private void callRemoteService() throws Exception {
 		String requestUrl = "http://localhost:8082/response/200";
 		ResponseEntity<String> response = restTemplate.exchange(requestUrl, HttpMethod.GET, null, String.class);
 
 		if (response.getStatusCode().value() == HttpStatus.SERVICE_UNAVAILABLE.value()) {
-			throw new Exception("Destination Microservice not availble");
+			throw new Exception("Destination Microservice not available");
 		}
 
 		if (response.getStatusCode().value() == HttpStatus.OK.value()) {
             log.info("Received response from mock service: {}", response.getBody());
 		}
-		return response;
 	}
 
 }

@@ -54,7 +54,6 @@ Deposit event was not sent
 
 
 
-
 ```mermaid
 sequenceDiagram
     participant Client
@@ -63,11 +62,16 @@ sequenceDiagram
     participant WithdrawalService
     participant DepositService
 
-    Client->>TransferService: POST /transfer
+    Client->>TransferService: Transfer Request
 
     TransferService->>Kafka: WithdrawalRequestedEvent
-    Kafka->>WithdrawalService: Consume WithdrawalRequestedEvent
 
-    TransferService->>Kafka: DepositRequestedEvent
-    Kafka->>DepositService: Consume DepositRequestedEvent
+    alt No Error
+        TransferService->>Kafka: DepositRequestedEvent
+    else Exception
+        TransferService-->>Client: Rollback / Exception
+    end
+
+    Kafka->>WithdrawalService: WithdrawalRequestedEvent
+    Kafka->>DepositService: DepositRequestedEvent
 ```

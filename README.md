@@ -69,13 +69,13 @@ sequenceDiagram
 
     TransferService->>Kafka Topics: Send WithdrawalRequestedEvent
     TransferService->>TransferService: Execute business logic
+    TransferService->>Kafka Topics: Send DepositRequestedEvent
 
-    alt Business logic succeeds
-        TransferService->>Kafka Topics: Send DepositRequestedEvent
+    alt All operations succeed
         Kafka Transaction->>Kafka Topics: Commit Transaction
         Kafka Topics->>Withdrawal Service: Consume WithdrawalRequestedEvent
         Kafka Topics->>Deposit Service: Consume DepositRequestedEvent
-    else Business logic fails
+    else Any send or business logic fails
         Kafka Transaction->>Kafka Topics: Rollback Transaction
         Note over Withdrawal Service,Deposit Service: No events are visible (read_committed)
     end
@@ -87,3 +87,4 @@ sequenceDiagram
 - The business logic is executed between the two `send()` operations.
 - On **Commit**, both events become visible to consumers.
 - On **Rollback**, neither event is visible because consumers use `isolation.level=read_committed`.
+- Kafka transactions guarantee atomicity. If any operation inside the transaction fails (sending an event or executing business logic), the transaction is rolled back and no event becomes visible to consumers.

@@ -51,3 +51,23 @@ Kafka transaction rollback
 |
 Consumers will not read withdrawal event
 Deposit event was not sent
+
+
+
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant TransferService
+    participant Kafka
+    participant WithdrawalService
+    participant DepositService
+
+    Client->>TransferService: POST /transfer
+
+    TransferService->>Kafka: WithdrawalRequestedEvent
+    Kafka->>WithdrawalService: Consume WithdrawalRequestedEvent
+
+    TransferService->>Kafka: DepositRequestedEvent
+    Kafka->>DepositService: Consume DepositRequestedEvent
+```

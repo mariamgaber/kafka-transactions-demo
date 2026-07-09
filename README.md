@@ -54,24 +54,31 @@ Deposit event was not sent
 
 
 
+## Kafka Transaction Flow
+
 ```mermaid
 sequenceDiagram
     participant Client
     participant TransferService
-    participant Kafka
+    participant KafkaTransaction
     participant WithdrawalService
     participant DepositService
 
-    Client->>TransferService: Transfer Request
+    Client->>TransferService: POST /transfer
+    TransferService->>KafkaTransaction: Begin Transaction
 
-    TransferService->>Kafka: WithdrawalRequestedEvent
+    TransferService->>KafkaTransaction: Send WithdrawalRequestedEvent
+    TransferService->>KafkaTransaction: Send DepositRequestedEvent
 
-    alt No Error
-        TransferService->>Kafka: DepositRequestedEvent
-    else Exception
-        TransferService-->>Client: Rollback / Exception
+    alt No Exception
+        KafkaTransaction->>KafkaTransaction: Commit Transaction
+        KafkaTransaction->>WithdrawalService: WithdrawalRequestedEvent visible/consumed
+        KafkaTransaction->>DepositService: DepositRequestedEvent visible/consumed
+    else Exception occurs
+        KafkaTransaction->>KafkaTransaction: Rollback Transaction
+        KafkaTransaction-->>WithdrawalService: No message delivered
+        KafkaTransaction-->>DepositService: No message delivered
     end
 
-    Kafka->>WithdrawalService: WithdrawalRequestedEvent
-    Kafka->>DepositService: DepositRequestedEvent
+    TransferService-->>Client: Transfer result
 ```

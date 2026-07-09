@@ -37,9 +37,6 @@ Withdrawal service consumes withdrawal
 Deposit service consumes deposit
 
 
-
-
-
 Error Flow:
 Send withdrawal event
 |
@@ -52,27 +49,41 @@ Kafka transaction rollback
 Consumers will not read withdrawal event
 Deposit event was not sent
 
-
-
 ## Kafka Transaction Flow
+
+The `TransferService` publishes both `WithdrawalRequestedEvent` and `DepositRequestedEvent` within a single Kafka transaction.
+
+If the business logic completes successfully, the transaction is committed and both events become visible to consumers. If an exception occurs before the commit, the transaction is rolled back and neither event is consumed.
+
+```mermaid
 sequenceDiagram
     participant Client
     participant TransferService
-    participant KafkaTransaction
-    participant KafkaTopics
-    participant Consumers
+    participant Kafka Transaction
+    participant Kafka Topics
+    participant Withdrawal Service
+    participant Deposit Service
 
     Client->>TransferService: POST /transfers
-    TransferService->>KafkaTransaction: Begin Transaction
+    TransferService->>Kafka Transaction: Begin Transaction
 
-    TransferService->>KafkaTopics: Send WithdrawalRequestedEvent
-    TransferService->>TransferService: Execute business logic between sends
+    TransferService->>Kafka Topics: Send WithdrawalRequestedEvent
+    TransferService->>TransferService: Execute business logic
 
     alt Business logic succeeds
-        TransferService->>KafkaTopics: Send DepositRequestedEvent
-        KafkaTransaction->>KafkaTopics: Commit Transaction
-        KafkaTopics->>Consumers: Both events become visible
+        TransferService->>Kafka Topics: Send DepositRequestedEvent
+        Kafka Transaction->>Kafka Topics: Commit Transaction
+        Kafka Topics->>Withdrawal Service: Consume WithdrawalRequestedEvent
+        Kafka Topics->>Deposit Service: Consume DepositRequestedEvent
     else Business logic fails
-        KafkaTransaction->>KafkaTopics: Rollback Transaction
-        KafkaTopics-->>Consumers: No events are visible
+        Kafka Transaction->>Kafka Topics: Rollback Transaction
+        Note over Withdrawal Service,Deposit Service: No events are visible (read_committed)
     end
+```
+
+### Key Points
+
+- `WithdrawalRequestedEvent` and `DepositRequestedEvent` are published within the same Kafka transaction.
+- The business logic is executed between the two `send()` operations.
+- On **Commit**, both events become visible to consumers.
+- On **Rollback**, neither event is visible because consumers use `isolation.level=read_committed`.
